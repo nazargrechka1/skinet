@@ -9,12 +9,12 @@ namespace API.Controllers;
 public class ProductsController(IProductRepository repository) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts()
+    public async Task<ActionResult<IReadOnlyList<Product>>> 
+        GetProducts(string? brand, string? type, string? sort)
     {
-        return Ok(await repository.GetProductsAsync());
+        return Ok(await repository.GetProductsAsync(brand, type, sort));
     }
-
-    // single item get 
+    
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
@@ -37,7 +37,7 @@ public class ProductsController(IProductRepository repository) : ControllerBase
     {
         if (id != product.Id) return BadRequest("id mismatch");
         if (!repository.ProductExists(id)) return NotFound();
-        
+
         repository.UpdateProduct(product);
         return await repository.SaveChangesAsync()
             ? NoContent()
@@ -49,11 +49,23 @@ public class ProductsController(IProductRepository repository) : ControllerBase
     {
         var product = await repository.GetProductByIdAsync(id);
         if (product == null) return NotFound();
-        
+
         repository.DeleteProduct(product);
-        
+
         return await repository.SaveChangesAsync()
             ? NoContent()
             : BadRequest("problem deleting product");
+    }
+
+    [HttpGet("brands")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetBrands()
+    {
+        return Ok(await repository.GetBrandsAsync());
+    }
+
+    [HttpGet("types")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetTypes()
+    {
+        return Ok(await repository.GetTypesAsync());
     }
 }
