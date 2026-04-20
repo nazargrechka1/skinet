@@ -1,42 +1,59 @@
 ﻿using Core.Entities;
-using Infrastructure.Data;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController : ControllerBase
+public class ProductsController(IProductRepository repository) : ControllerBase
 {
-    private readonly StoreContext _context;
-
-    public ProductsController(StoreContext context)
-    {
-        this._context = context;
-    }
-    
-
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts()
     {
-        return await _context.Products.ToListAsync();
+        return Ok(await repository.GetProductsAsync());
     }
-    
+
     // single item get 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
-        var product = await _context.Products.FindAsync(id);
+        var product = await repository.GetProductByIdAsync(id);
         return product == null ? NotFound() : Ok(product);
     }
 
     [HttpPost]
     public async Task<ActionResult<Product>> CreateProduct(Product product)
     {
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync();
+        repository.AddProduct(product);
 
-        return product;
+        return await repository.SaveChangesAsync()
+            ? CreatedAtAction("GetProduct", new { id = product.Id }, product)
+            : BadRequest("Problem Creating Product");
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult> UpdateProduct(int id, Product product)
+    {
+        if (id != product.Id) return BadRequest("id mismatch");
+        if (!repository.ProductExists(id)) return NotFound();
+        
+        repository.UpdateProduct(product);
+        return await repository.SaveChangesAsync()
+            ? NoContent()
+            : BadRequest("problem updating product");
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult> DeleteProduct(int id)
+    {
+        var product = await repository.GetProductByIdAsync(id);
+        if (product == null) return NotFound();
+        
+        repository.DeleteProduct(product);
+        
+        return await repository.SaveChangesAsync()
+            ? NoContent()
+            : BadRequest("problem deleting product");
     }
 }
