@@ -20,10 +20,13 @@ public class ProductRepository(StoreContext context) : IProductRepository
         {
             "priceAsc" => query.OrderBy(x => x.Price),
             "priceDesc" => query.OrderByDescending(x => x.Price),
+            "brand" => query.OrderBy(x => x.Brand),
+            "brandDesc" => query.OrderByDescending(x => x.Brand),
+            "alphabetDesc" => query.OrderByDescending(x => x.Name),
             _ => query.OrderBy(x => x.Name)
         };
         
-        return await query.ToListAsync();
+        return await query.ToListAsync();   
     }
 
     public async Task<Product?> GetProductByIdAsync(int id)
